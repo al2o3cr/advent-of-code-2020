@@ -1,0 +1,99 @@
+1000391
+19,x,x,x,x,x,x,x,x,x,x,x,x,37,x,x,x,x,x,383,x,x,x,x,x,x,x,23,x,x,x,x,13,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,29,x,457,x,x,x,x,x,x,x,x,x,41,x,x,x,x,x,x,17
+
+should be m_i - offset! manual calculations below are wrong!
+
+t mod 19 == 0
+t mod 37 == 13
+t mod 383 == 19
+t mod 23 == 27 == 4
+t mod 13 == 32 == 6
+t mod 29 == 48 == 19
+t mod 457 == 50
+t mod 41 == 60 == 19
+t mod 17 == 67 == 16
+
+M = 19 * 37 * 383 * 23 * 13 * 29 * 457 * 41 * 17 = 743656303245791
+
+M_i = M / m_i
+y_i = 1/(M_i) (mod m_i)
+x = a_i*M_i*y_i
+
+if a, m coprime:
+inv(a) mod m == a^(phi(m)-1) mod m
+
+ m | phi(m)
+---|-------
+ 19| 18
+ 37| 36
+383| 382
+ 23| 22
+ 13| 12
+ 29| 28
+457| 456
+ 41| 40
+ 17| 16
+
+(doh, they are ALL prime!)
+
+
+M_1 = M / 19 = 39139805433989 == 12 mod 19
+y_1 = M_1 ^ 17 = 8 mod 19
+
+M_2 = M / 37 = 20098819006643 == 32 mod 37
+y_2 = M_2 ^ 35 = 22 mod 37
+
+M_3 = M / 383 = 1941661366177 == 51 mod 383
+y_3 = M_3 ^ 381 = 368 mod 383
+
+M_4 = M / 23 = 32332882749817
+y_4 = M_4 ^ 21 = 5
+
+M_5 = M / 13 = 57204331018907
+y_5 = M_5 ^ 11 = 2
+
+M_6 = M / 29 = 25643320801579
+y_6 = M_6 ^ 27 = 4
+
+M_7 = M / 457 = 1627256681063
+y_7 = M_7 ^ 455 = 159
+
+M_8 = M / 41 = 18137958615751
+y_8 = M_8 ^ 39 = 2
+
+M_9 = M / 17 = 43744488426223
+y_9 = M_9 ^ 15 = 2
+
+0*39139805433989*8 + 13*20098819006643*22 + 19*1941661366177*368 + 4*32332882749817*5 +
+6*57204331018907*2 + 19*25643320801579*4 + 50*1627256681063*159 + 19*18137958615751*2 +
+16*43744488426223*2
+---
+37632117187841234, 449302025551684 mod M
+
+defmodule PowHelper do
+  def pow(a, 1), do: a
+  def pow(a, n), do: n*pow(a, n-1)
+end
+
+import PowHelper
+
+(fn ->
+  coefs =
+    "19,x,x,x,x,x,x,x,x,x,x,x,x,37,x,x,x,x,x,383,x,x,x,x,x,x,x,23,x,x,x,x,13,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,29,x,457,x,x,x,x,x,x,x,x,x,41,x,x,x,x,x,x,17"
+    |> String.split(",")
+    |> Enum.with_index()
+    |> Enum.filter(fn {x, _} -> x != "x" end)
+    |> Enum.map(fn {x, y} -> {String.to_integer(x), y} end)
+    |> Enum.map(fn {m_i, idx} -> {m_i, m_i - rem(idx, m_i)} end)
+
+  big_m = Enum.reduce(coefs, 1, fn {x, _}, acc -> acc * x end)
+
+  coefs
+  |> Enum.map(fn {m_i, a_i} -> {m_i, a_i, div(big_m, m_i)} end)
+  |> Enum.map(fn {m_i, a_i, bigm_i} -> {m_i, a_i, bigm_i, pow(bigm_i, m_i - 2) |> rem(m_i)} end)
+  |> Enum.map(fn {m_i, a_i, bigm_i, y_i} -> a_i * bigm_i * y_i end)
+  |> Enum.reduce(&Kernel.+/2)
+  |> rem(big_m)
+end).()
+
+result 294354277694107
