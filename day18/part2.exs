@@ -8,13 +8,12 @@ defmodule HomeworkParser do
   rparen = ascii_char([?)])
 
   number_or_group = choice([ignore(lparen) |> concat(parsec(:expression)) |> ignore(rparen), number_string])
-  defparsec :term, number_or_group |> optional(operator_plus |> concat(parsec(:term)) |> wrap()) |> wrap() |> map({:swizzle, []})
+  defparsec :term, number_or_group |> optional(operator_plus |> concat(parsec(:term))) |> wrap() |> map({:swizzle, []})
   defparsec :expression, parsec(:term) |> optional(operator_times |> concat(parsec(:expression))) |> wrap() |> map({:swizzle, []})
 
   defp swizzle(a) when is_tuple(a), do: a
   defp swizzle([a]), do: a
   defp swizzle([a, b, c]), do: {b, a, c}
-  defp swizzle([a, [b, c]]), do: {b, a, c}
 
   def parse(line) do
     {:ok, [result], "", _, _, _} = expression(line)
